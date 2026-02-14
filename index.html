@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🧲 CERN AEgIS: TRAP_CHAOS_OF_THE_AD_HALL</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root { --bg: #0b0e14; --accent: #00ff41; --panel: #161b22; --text: #00ff41; --danger: #ff3131; --gold: #ffd700; }
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100vh; font-family: 'Courier New', monospace; background: #000; color: var(--text); overflow: hidden; transition: background 0.2s; }
+
+        /* --- SCREENS --- */
+        #bootScreen, #briefingScreen, #performanceScreen, #creditScreen { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2500; }
+        #briefingScreen, #performanceScreen, #creditScreen { display: none; padding: 20px; }
+        #gameInterface { display: none; height: 100vh; width: 100vw; flex-direction: column; }
+
+        /* --- CREDITS ANIMATION --- */
+        #creditWrapper {
+            position: absolute;
+            top: 100%;
+            width: 100%;
+            text-align: center;
+            animation: roll 20s linear forwards;
+        }
+        @keyframes roll {
+            from { top: 100%; }
+            to { top: -150%; }
+        }
+        .credit-header { color: var(--gold); font-size: 24px; margin-bottom: 30px; }
+        .credit-section { margin-bottom: 50px; }
+        .credit-role { color: #888; font-size: 14px; text-transform: uppercase; }
+        .credit-name { color: var(--accent); font-size: 20px; margin-top: 5px; }
+
+        /* --- CRT & ALERT EFFECTS --- */
+        .scanline { width: 100%; height: 2px; background: rgba(0, 255, 65, 0.05); position: absolute; top: 0; left: 0; z-index: 3000; pointer-events: none; animation: scan 4s linear infinite; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+        .critical-alert { animation: redFlash 1s infinite; background: rgba(255, 0, 0, 0.05) !important; }
+        @keyframes redFlash { 0%, 100% { box-shadow: inset 0 0 0px var(--danger); } 50% { box-shadow: inset 0 0 100px rgba(255, 0, 0, 0.3); } }
+        .shake-active { animation: shake 0.15s infinite; }
+        @keyframes shake { 0% { transform: translate(0,0); } 25% { transform: translate(-8px, 8px); } 50% { transform: translate(8px, -8px); } 75% { transform: translate(-8px, -8px); } 100% { transform: translate(0,0); } }
+
+        /* --- LOGO --- */
+        .logo-container { margin-bottom: 20px; position: relative; width: 80px; height: 80px; }
+        .ring { position: absolute; border: 2px solid var(--accent); border-radius: 50%; width: 100%; height: 100%; animation: pulse 2s ease-in-out infinite; }
+        .core { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px var(--accent); }
+        @keyframes pulse { 0%, 100% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
+
+        /* --- UI COMPONENTS --- */
+        .hof-display { font-size: 12px; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .hud { display: grid; grid-template-columns: 200px 1fr 1fr 200px; background: #000; padding: 0 20px; border-bottom: 2px solid #333; align-items: center; height: 55px; flex-shrink: 0; }
+        #startBtn { padding: 8px 16px; background: #111; color: var(--accent); border: 2px solid var(--accent); cursor: pointer; text-transform: uppercase; font-size: 11px; font-weight: bold; }
+        .score { font-size: 22px; font-weight: bold; text-align: center; color: #fff; text-shadow: 0 0 10px var(--accent); }
+        .timer { font-size: 24px; color: var(--danger); font-weight: bold; text-align: right; }
+
+        .main-content { display: flex; flex-grow: 1; gap: 8px; padding: 8px; background: #080a0f; min-height: 0; overflow: hidden; }
+        .plots-container { display: flex; flex-direction: column; flex: 1; gap: 8px; }
+        .plot-row { display: flex; flex: 1; gap: 8px; min-height: 0; }
+        .plot-wrapper { flex: 1; min-height: 0; background: #000; border: 1px solid #333; position: relative; border-radius: 4px; overflow: hidden; }
+        #particleCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+
+        .card { width: 350px; background: var(--panel); border: 1px solid #30363d; padding: 12px; display: flex; flex-direction: column; min-height: 0; height: 100%; }
+        #coil-list { overflow-y: auto; flex-grow: 1; display: flex; flex-direction: column; gap: 12px; padding-right: 10px; }
+        #coil-list::-webkit-scrollbar { width: 6px; }
+        #coil-list::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+        .coil-item { border-bottom: 1px solid #333; padding-bottom: 8px; }
+
+        .terminal-log { width: 100%; max-width: 800px; min-height: 450px; border: 1px solid var(--accent); padding: 25px; font-size: 13px; line-height: 1.4; background: #050805; box-shadow: 0 0 20px rgba(0,255,65,0.2); overflow: hidden; display: flex; flex-direction: column; }
+        .ready-btn { padding: 12px 30px; background: #000; color: var(--accent); border: 2px solid var(--accent); cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 10px;}
+        #historyPlot { flex-grow: 1; width: 100%; margin-top: 15px; border-top: 1px solid #222; }
+        .magnet-slider { width: 100%; cursor: pointer; -webkit-appearance: none; background: #222; height: 4px; outline: none; }
+        .magnet-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--accent); cursor: pointer; }
+    </style>
+</head>
+<body id="mainBody">
+
+    <div class="scanline"></div>
+
+    <div id="bootScreen">
+        <div class="hof-display" id="globalHOF">HALL OF FAME: LOADING...</div>
+        <div class="logo-container"><div class="ring"></div><div class="core"></div></div>
+        <h1 style="color:var(--accent); font-size: 18px; margin-bottom: 20px;">&gt; AEgIS_MAGNETS_CHAOS_OF_THE_AD_HALL</h1>
+        <input type="text" id="operatorInput" style="background:#000; border:1px solid #00ff41; color:#00ff41; padding:10px; width:300px; text-align:center; margin-bottom:15px; outline:none;" placeholder="OPERATOR ID">
+        
+        <select id="difficultySelect" style="background:#000; border:1px solid #00ff41; color:#00ff41; padding:10px; width:300px; margin-bottom:15px; outline:none;">
+            <option value="easy">LEVEL: NOVICE (120s | STABLE CRYOS)</option>
+            <option value="medium" selected>LEVEL: OPERATOR (80s | STANDARD)</option>
+            <option value="hard">LEVEL: EXPERT (45s | SENSITIVE COILS)</option>
+        </select>
+        
+        <select id="bootMissionSelect" style="background:#000; border:1px solid #00ff41; color:#00ff41; padding:10px; width:300px; margin-bottom:15px; outline:none;">
+            <option value="aegis">MODE: STANDARD_STABILIZATION</option>
+            <option value="random">MODE: GHOST_FIELD_CHALLENGE</option>
+        </select>
+        <button class="ready-btn" onclick="masterUnlock()">ENGAGE MAGNETS</button>
+    </div>
+
+    <div id="briefingScreen">
+        <div class="logo-container" style="transform: scale(0.6);"><div class="ring" style="animation-duration: 0.5s;"></div><div class="core"></div></div>
+        <div class="terminal-log" id="logContainer"></div>
+        <button id="accessBtn" class="ready-btn" style="display:none;" onclick="enterLab()">INITIALIZE TERMINAL</button>
+    </div>
+
+    <div id="performanceScreen">
+        <div class="terminal-log">
+            <div id="perfStats"></div>
+            <div id="historyPlot"></div>
+        </div>
+        <div style="display: flex; gap: 20px;">
+            <button class="ready-btn" onclick="location.reload()">RE-CALIBRATE</button>
+            <button class="ready-btn" onclick="showCredits()" style="border-color: var(--gold); color: var(--gold);">EXIT TERMINAL</button>
+        </div>
+    </div>
+
+    <div id="creditScreen">
+        <div id="creditWrapper">
+            <h1 class="credit-header">AEgIS MISSION COMPLETE</h1>
+            
+            <div class="credit-section">
+                <p class="credit-role">Lead Scientist</p>
+                <p class="credit-name" id="creditOperator">OPERATOR</p>
+            </div>
+
+            <div class="credit-section">
+                <p class="credit-role">Orignal Concept and Developed by</p>
+                <p class="credit-name">Dr.Bharat Singh Rawat</p>
+            </div>
+
+            <div class="credit-section">
+                <p class="credit-role">Contact Details</p>
+                <p class="credit-name">bharat.bharat22@gmail.com</p>
+            </div>
+
+            <div class="credit-section">
+                <p class="credit-role">Music & Sound</p>
+                <p class="credit-name">8-Bit Audio Sequencer V2.0</p>
+            </div>
+
+            <div class="credit-section">
+                <p class="credit-role">Data Visualization</p>
+                <p class="credit-name">Plotly Terminal Bridge</p>
+            </div>
+
+            <div class="credit-section" style="margin-top: 100px;">
+                <p class="credit-name">THANK YOU FOR PRESERVING STABILITY</p>
+                <p class="credit-role">CERN - European Organization for Nuclear Research</p>
+            </div>
+            
+            <button class="ready-btn" onclick="location.reload()" style="margin-top: 50px;">RESTART SYSTEM</button>
+        </div>
+    </div>
+
+    <div id="gameInterface">
+        <div class="hud">
+            <div><button onclick="beginMission()" id="startBtn">INITIALIZE</button></div>
+            <div class="score" id="scoreLabel">STABILITY: 0.0%</div>
+            <div style="font-size:10px; text-align:center;"><div id="activeUser">OP: ---</div></div>
+            <div class="timer" id="timerLabel">---s</div>
+        </div>
+        <div class="main-content">
+            <div class="plots-container">
+                <div class="plot-row">
+                    <div class="plot-wrapper">
+                        <div id="plot2D" style="height:100%; width:100%;"></div>
+                        <canvas id="particleCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="plot-row">
+                    <div class="plot-wrapper"><div id="plot1D" style="height:100%; width:100%;"></div></div>
+                    <div class="plot-wrapper"><div id="plotGrad" style="height:100%; width:100%;"></div></div>
+                </div>
+            </div>
+            <div class="card"><div id="coil-list"></div></div>
+        </div>
+    </div>
+
+<script>
+let magnetData = null, currents = {}, timeLeft = 0, timerId = null, curMatch = 0, isSystemActive = false;
+let audioCtx = null, musicGain = null, particles = [], operatorName = "OPERATOR";
+let currentTarget = [], targetGrad = [], isRandom = false;
+let stabilityHistory = []; 
+let difficulty = "medium";
+
+// --- NEW FUNCTION: SHOW CREDITS ---
+function showCredits() {
+    document.getElementById('performanceScreen').style.display = 'none';
+    document.getElementById('creditScreen').style.display = 'flex';
+    document.getElementById('creditOperator').innerText = operatorName.toUpperCase();
+}
+
+// --- AUDIO ENGINE ---
+const FREQ = { C3: 130.81, D3: 146.83, Eb3: 155.56, F3: 174.61, G3: 196.00, Ab3: 207.65, Bb3: 233.08, C4: 261.63, D4: 293.66, Eb4: 311.13, F4: 349.23, G4: 392.00, Ab4: 415.30 };
+const phrases = [
+    ["C4","G3","C4","Eb4","D4","C4","Bb3","G3","C4","C4","G4","F4","Eb4","D4","C4",null],
+    ["Eb4","Eb4","F4","G4","Ab4","G4","F4","Eb4","D4","D4","Eb4","F4","G4","F4","Eb4","D4"],
+    ["C3","G3","C4","G3","C3","G3","C4","G3","Ab2","Eb3","Ab3","Eb3","Bb2","F3","Bb3","F3"],
+    ["C4","Bb3","Ab3","G3","F3","Eb3","D3","C3","C2","G2","C3","G3","C4",null,null,null]
+];
+let tickIndex = 0;
+let musicTimeout = null;
+
+function playTone(freq, time, type='square', vol=0.06, decay=0.15) {
+    if (!freq || !audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = type;
+    
+    let vibrato = (curMatch < 30 && isSystemActive) ? (Math.sin(audioCtx.currentTime * 20) * 10) : 0;
+    osc.frequency.setValueAtTime(freq + vibrato, time);
+    
+    g.gain.setValueAtTime(vol, time);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + decay);
+    
+    osc.connect(g);
+    g.connect(musicGain);
+    osc.start(time);
+    osc.stop(time + decay);
+}
+
+function runSequencer() {
+    if (!isSystemActive) return;
+    
+    let time = audioCtx.currentTime;
+    let currentPhrase = phrases[Math.floor(tickIndex / 16) % phrases.length];
+    let note = currentPhrase[tickIndex % 16];
+    
+    if (note) playTone(FREQ[note], time, 'square', 0.04, 0.15);
+    if (tickIndex % 4 === 0) playTone(FREQ[note] ? FREQ[note]/4 : 65.41, time, 'triangle', 0.1, 0.4);
+
+    tickIndex++;
+
+    let baseTempo = 180;
+    let currentTempo = baseTempo;
+    
+    if (timeLeft <= 20) {
+        let speedFactor = 1 + ((20 - timeLeft) / 20); 
+        currentTempo = baseTempo / speedFactor;
+    }
+
+    musicTimeout = setTimeout(runSequencer, currentTempo);
+}
+
+function initHOF() {
+    const topOp = localStorage.getItem('aegis_top_op') || "NONE";
+    const topScore = localStorage.getItem('aegis_top_score') || "0.0";
+    document.getElementById('globalHOF').innerText = `🏆 HALL OF FAME: ${topOp} - ${topScore}%`;
+}
+initHOF();
+
+function masterUnlock() {
+    operatorName = document.getElementById('operatorInput').value || "OPERATOR";
+    isRandom = document.getElementById('bootMissionSelect').value === 'random';
+    difficulty = document.getElementById('difficultySelect').value;
+    
+    document.getElementById('activeUser').innerText = "OP: " + operatorName;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    document.getElementById('bootScreen').style.display = 'none';
+    document.getElementById('briefingScreen').style.display = 'flex';
+    const log = document.getElementById('logContainer');
+    
+    const msgs = [
+        "&gt; Checking Magnetic Confinement Field...",
+        `&gt; DIFFICULTY LEVEL: ${difficulty.toUpperCase()} ENABLED.`,
+        "&gt; Warning: Low stability causes structural vibration.",
+        "&gt; Interface online. Stand by for antiproton injection."
+    ];
+
+    msgs.forEach((m, i) => { 
+        setTimeout(() => { 
+            let d = document.createElement('div'); 
+            d.innerHTML = m; 
+            log.appendChild(d); 
+            if(i === msgs.length - 1) document.getElementById('accessBtn').style.display = 'block'; 
+        }, i * 600); 
+    });
+}
+
+function enterLab() {
+    document.getElementById('briefingScreen').style.display = 'none';
+    document.getElementById('gameInterface').style.display = 'flex';
+    fetch('magnet_data.json').then(r => r.json()).then(data => {
+        magnetData = data; 
+        const zk = magnetData.z_axial ? 'z_axial' : 'z';
+        if(isRandom) generateGhostField(); else currentTarget = [...data.target];
+        
+        targetGrad = new Array(currentTarget.length).fill(0);
+        for(let i=1; i < currentTarget.length; i++) {
+            targetGrad[i] = (currentTarget[i] - currentTarget[i-1]) / (magnetData[zk][i] - magnetData[zk][i-1]);
+        }
+        initUI(); initParticles(); update(); animate();
+    });
+}
+
+function initUI() {
+    const list = document.getElementById('coil-list');
+    list.innerHTML = ""; // Clear list
+    Object.keys(magnetData.coils1D).sort((a,b) => (parseInt(a.match(/\d+/))||0) - (parseInt(b.match(/\d+/))||0)).forEach(name => {
+        currents[name] = 0;
+        let div = document.createElement('div'); div.className = 'coil-item';
+        div.innerHTML = `<div style="display:flex; justify-content:space-between; font-size:9px;"><span>COIL ${name.match(/\d+/)}</span><span id="label_${name}">0.0A</span></div>
+                         <input type="range" class="magnet-slider" id="slider_${name}" min="0" max="200" step="0.1" value="0" oninput="setPower('${name}',this.value)" disabled>`;
+        list.appendChild(div);
+    });
+}
+
+// PERFORMANCE OPTIMIZATION: Throttling plot updates
+let plotUpdateTimeout = null;
+function setPower(name, val) { 
+    if(!isSystemActive) return;
+    currents[name] = parseFloat(val); 
+    document.getElementById(`label_${name}`).innerText = val + "A"; 
+    
+    if (!plotUpdateTimeout) {
+        plotUpdateTimeout = setTimeout(() => {
+            update();
+            plotUpdateTimeout = null;
+        }, 100);
+    }
+}
+
+function update() {
+    if (!magnetData) return;
+    const zk = magnetData.z_axial ? 'z_axial' : 'z';
+    let bz1D = new Array(magnetData[zk].length).fill(0), gradLive = new Array(magnetData[zk].length).fill(0);
+    let bmag2D = Array.from({length: magnetData.y_grid.length}, () => new Array(magnetData.z_grid.length).fill(0));
+    
+    for (let name in currents) {
+        let I = currents[name]; if (I <= 0) continue;
+        magnetData.coils1D[name].forEach((v, i) => bz1D[i] += v * I);
+        magnetData.coils2D[name].forEach((row, r) => row.forEach((v, c) => bmag2D[r][c] += v * I));
+    }
+    
+    for(let i=1; i < bz1D.length; i++) { 
+        gradLive[i] = (bz1D[i] - bz1D[i-1]) / (magnetData[zk][i] - magnetData[zk][i-1]); 
+    }
+
+    if (Object.values(currents).every(v => v === 0)) curMatch = 0;
+    else {
+        const sensMult = difficulty === 'hard' ? 0.25 : (difficulty === 'easy' ? 0.5 : 0.35);
+        let sumSqErrField = 0; const peakField = Math.max(...currentTarget.map(Math.abs)) || 1;
+        magnetData[zk].forEach((_, i) => { let diff = currentTarget[i] - bz1D[i]; sumSqErrField += diff * diff; });
+        let matchField = 100 * (1 - (Math.sqrt(sumSqErrField / magnetData[zk].length) / (peakField * sensMult)));
+        let sumSqErrGrad = 0; const peakGrad = Math.max(...targetGrad.map(Math.abs)) || 1;
+        targetGrad.forEach((tg, i) => { let diff = tg - gradLive[i]; sumSqErrGrad += diff * diff; });
+        let matchGrad = 100 * (1 - (Math.sqrt(sumSqErrGrad / targetGrad.length) / (peakGrad * (sensMult + 0.1))));
+        curMatch = Math.max(0, (matchField * 0.6) + (matchGrad * 0.4));
+    }
+
+    document.getElementById('scoreLabel').innerText = `STABILITY: ${curMatch.toFixed(1)}%`;
+    const common = { paper_bgcolor:'#000', plot_bgcolor:'#000', font:{color:'#00ff41', size:9}, margin:{t:30,b:40,l:50,r:30} };
+    
+    Plotly.react('plot1D', [{ x: magnetData[zk], y: currentTarget, line:{dash:'dot', color:'#333', width:2}}, { x: magnetData[zk], y: bz1D, line:{color:curMatch>95?'#00ff41':'#ff3131'}}], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'B (T)', gridcolor:'#111'} });
+    Plotly.react('plotGrad', [{ x: magnetData[zk], y: targetGrad, line:{dash:'dot', color:'#222', width:1}}, { x: magnetData[zk], y: gradLive, line:{color:curMatch>95?'#00ff41':'#ff9900'}, fill:'tozeroy'}], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'dB/dz', gridcolor:'#111'} });
+    Plotly.react('plot2D', [{ z: bmag2D, x: magnetData.z_grid, y: magnetData.y_grid, type: 'heatmap', colorscale: curMatch > 90 ? 'Viridis' : 'Hot', showscale: true }], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'Radial R (mm)', gridcolor:'#111'} });
+}
+
+function beginMission() {
+    isSystemActive = true; 
+    document.getElementById('startBtn').disabled = true;
+    document.querySelectorAll('.magnet-slider').forEach(s => s.disabled = false);
+    stabilityHistory = [];
+    musicGain = audioCtx.createGain();
+    musicGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+    musicGain.connect(audioCtx.destination);
+    timeLeft = difficulty === 'easy' ? 120 : (difficulty === 'hard' ? 45 : 80);
+    runSequencer();
+    timerId = setInterval(() => {
+        timeLeft--; 
+        document.getElementById('timerLabel').innerText = timeLeft + "s";
+        stabilityHistory.push(curMatch); 
+        if (timeLeft <= 10 && curMatch < 30) {
+            document.getElementById('mainBody').classList.add('shake-active', 'critical-alert');
+        } else {
+            document.getElementById('mainBody').classList.remove('shake-active', 'critical-alert');
+        }
+        if (timeLeft <= 0) endGame();
+    }, 1000);
+}
+
+function endGame() {
+    clearInterval(timerId); 
+    clearTimeout(musicTimeout);
+    isSystemActive = false; 
+    document.getElementById('mainBody').classList.remove('shake-active', 'critical-alert');
+    document.querySelectorAll('.magnet-slider').forEach(s => s.disabled = true);
+    if (musicGain) musicGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
+    const currentTop = parseFloat(localStorage.getItem('aegis_top_score') || 0);
+    if (curMatch > currentTop) {
+        localStorage.setItem('aegis_top_score', curMatch.toFixed(1));
+        localStorage.setItem('aegis_top_op', operatorName.toUpperCase());
+        initHOF();
+    }
+    document.getElementById('gameInterface').style.display = 'none';
+    document.getElementById('performanceScreen').style.display = 'flex';
+    document.getElementById('perfStats').innerHTML = `
+        &gt; LOG_ENTRY: SHIFT_TERMINATED<br>
+        &gt; OPERATOR_ID: ${operatorName.toUpperCase()}<br>
+        &gt; FINAL_STABILITY: ${curMatch.toFixed(2)}%<br>
+        -----------------------------------------<br>
+        ${getSnarkyComment(curMatch)}<br>
+    `;
+    const timeAxis = Array.from({length: stabilityHistory.length}, (_, i) => i);
+    Plotly.newPlot('historyPlot', [{ x: timeAxis, y: stabilityHistory, type: 'scatter', mode: 'lines', fill: 'tozeroy', line: {color: '#00ff41'} }], { title: {text: 'SHIFT STABILITY HISTORY', font: {color: '#00ff41', size: 12}}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#00ff41', size: 10}, margin: {t: 30, b: 30, l: 40, r: 20}, xaxis: {title: 'Time (s)', gridcolor: '#222', showgrid: true}, yaxis: {title: 'Stability %', gridcolor: '#222', showgrid: true, range: [0, 100]} });
+}
+
+function getSnarkyComment(score) {
+    if (score >= 98) return "&gt; STATUS: SUSPICIOUSLY PERFECT. Are you a time traveler?";
+    if (score >= 85) return "&gt; STATUS: STABLE. The physicists are happy, which is rare.";
+    if (score >= 60) return "&gt; STATUS: MEH. It's stable enough for a government project.";
+    if (score >= 30) return "&gt; STATUS: MESSY. We have lost three interns to the gradient.";
+    return "&gt; STATUS: APOCALYPTIC. You've turned the AD Hall into a heater.";
+}
+
+function generateGhostField() {
+    let ghost = new Array(magnetData.z_axial.length).fill(0);
+    Object.keys(magnetData.coils1D).forEach(k => { if(Math.random() > 0.6) { let amp = Math.random() * 140; magnetData.coils1D[k].forEach((v,i) => ghost[i] += v * amp); } });
+    currentTarget = ghost; update();
+}
+
+function initParticles() { 
+    const pc = document.getElementById('particleCanvas'); pc.width = pc.offsetWidth; pc.height = pc.offsetHeight; 
+    particles = Array.from({length: 80}, () => ({ x: Math.random() * pc.width, y: pc.height/2, vx: (Math.random()-0.5)*3 })); 
+}
+
+function animate() {
+    const pc = document.getElementById('particleCanvas'); if(!pc) return;
+    const pCtx = pc.getContext('2d'); pCtx.clearRect(0,0,pc.width,pc.height);
+    const radialCenter = pc.height / 2;
+    particles.forEach(p => {
+        p.x += p.vx;
+        p.y += (Math.random()-0.5) * (8 - (curMatch/15)) + (radialCenter - p.y) * 0.05;
+        if(p.x > pc.width) p.x = 0; if(p.x < 0) p.x = pc.width;
+        pCtx.fillStyle = curMatch >= 95 ? "#00ff41" : (curMatch > 70 ? "#ff9900" : "#ff3131");
+        pCtx.beginPath(); pCtx.arc(p.x, p.y, 1.5, 0, Math.PI*2); pCtx.fill();
+    });
+    requestAnimationFrame(animate);
+}
+</script>
+</body>
+</html>

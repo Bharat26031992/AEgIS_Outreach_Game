@@ -5,48 +5,52 @@
     <title>🧲 CERN AEgIS: TRAP_CHAOS_OF_THE_AD_HALL</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        :root { --bg: #0b0e14; --accent: #00ff41; --panel: #161b22; --text: #00ff41; --danger: #ff3131; --gold: #ffd700; }
+        :root { --bg: #0b0e14; --accent: #00ff41; --panel: #161b22; --text: #00ff41; --danger: #ff3131; --gold: #ffd700; --target: #00ffff; }
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; width: 100%; height: 100vh; font-family: 'Courier New', monospace; background: #000; color: var(--text); overflow: hidden; transition: background 0.2s; }
 
         /* --- SCREENS --- */
-        #bootScreen, #briefingScreen, #performanceScreen, #creditScreen { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2500; }
-        #briefingScreen, #performanceScreen, #creditScreen { display: none; padding: 20px; }
+        #bootScreen, #registrationScreen, #briefingScreen, #performanceScreen, #creditScreen { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 2500; }
+        #registrationScreen, #briefingScreen, #performanceScreen, #creditScreen { display: none; padding: 20px; }
         #gameInterface { display: none; height: 100vh; width: 100vw; flex-direction: column; }
 
-        /* --- CREDITS ANIMATION --- */
-        #creditWrapper {
-            position: absolute;
-            top: 100%;
-            width: 100%;
-            text-align: center;
-            animation: roll 20s linear forwards;
-        }
-        @keyframes roll {
-            from { top: 100%; }
-            to { top: -150%; }
-        }
+        /* --- HALL OF FAME --- */
+        .hof-container { margin-bottom: 20px; border: 1px solid #333; padding: 10px; background: #050505; width: 320px; position: relative; }
+        .hof-title { color: var(--gold); font-size: 14px; text-align: center; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .hof-row { display: flex; justify-content: space-between; font-size: 11px; margin: 3px 0; color: #aaa; }
+        .hof-row.top { color: var(--gold); font-weight: bold; }
+        .clear-hof { font-size: 8px; color: #666; cursor: pointer; text-decoration: underline; position: absolute; right: 10px; top: 12px; }
+        .clear-hof:hover { color: var(--danger); }
+
+        /* --- FORMS --- */
+        .form-group { margin-bottom: 15px; width: 300px; display: flex; flex-direction: column; text-align: left; }
+        .form-group label { font-size: 11px; margin-bottom: 5px; color: var(--gold); font-weight: bold; }
+        .form-input { background:#000; border:1px solid #00ff41; color:#00ff41; padding:10px; outline:none; font-family: inherit; font-size: 12px; }
+        .form-input::placeholder { color: #00ff4155; }
+
+        /* --- CREDITS --- */
+        #creditWrapper { position: absolute; top: 100%; width: 100%; text-align: center; animation: roll 20s linear forwards; }
+        @keyframes roll { from { top: 100%; } to { top: -150%; } }
         .credit-header { color: var(--gold); font-size: 24px; margin-bottom: 30px; }
         .credit-section { margin-bottom: 50px; }
         .credit-role { color: #888; font-size: 14px; text-transform: uppercase; }
         .credit-name { color: var(--accent); font-size: 20px; margin-top: 5px; }
 
-        /* --- CRT & ALERT EFFECTS --- */
+        /* --- CRT & EMERGENCY EFFECTS --- */
         .scanline { width: 100%; height: 2px; background: rgba(0, 255, 65, 0.05); position: absolute; top: 0; left: 0; z-index: 3000; pointer-events: none; animation: scan 4s linear infinite; }
         @keyframes scan { from { top: 0; } to { top: 100%; } }
-        .critical-alert { animation: redFlash 1s infinite; background: rgba(255, 0, 0, 0.05) !important; }
-        @keyframes redFlash { 0%, 100% { box-shadow: inset 0 0 0px var(--danger); } 50% { box-shadow: inset 0 0 100px rgba(255, 0, 0, 0.3); } }
-        .shake-active { animation: shake 0.15s infinite; }
-        @keyframes shake { 0% { transform: translate(0,0); } 25% { transform: translate(-8px, 8px); } 50% { transform: translate(8px, -8px); } 75% { transform: translate(-8px, -8px); } 100% { transform: translate(0,0); } }
+        .critical-alert { animation: redFlash 0.5s infinite; background: rgba(255, 0, 0, 0.15) !important; }
+        @keyframes redFlash { 0%, 100% { box-shadow: inset 0 0 0px var(--danger); } 50% { box-shadow: inset 0 0 150px rgba(255, 0, 0, 0.5); } }
+        .shake-active { animation: shake 0.1s infinite; }
+        @keyframes shake { 0% { transform: translate(0,0); } 25% { transform: translate(-12px, 12px); } 50% { transform: translate(12px, -12px); } 75% { transform: translate(-12px, -12px); } 100% { transform: translate(0,0); } }
 
         /* --- LOGO --- */
         .logo-container { margin-bottom: 20px; position: relative; width: 80px; height: 80px; }
         .ring { position: absolute; border: 2px solid var(--accent); border-radius: 50%; width: 100%; height: 100%; animation: pulse 2s ease-in-out infinite; }
-        .core { position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; background: var(--accent); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px var(--accent); }
+        .core { position: absolute; top: 50%; left: 50%; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 15px var(--accent); }
         @keyframes pulse { 0%, 100% { transform: scale(0.8); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 1; } }
 
-        /* --- UI COMPONENTS --- */
-        .hof-display { font-size: 12px; color: var(--gold); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        /* --- UI --- */
         .hud { display: grid; grid-template-columns: 200px 1fr 1fr 200px; background: #000; padding: 0 20px; border-bottom: 2px solid #333; align-items: center; height: 55px; flex-shrink: 0; }
         #startBtn { padding: 8px 16px; background: #111; color: var(--accent); border: 2px solid var(--accent); cursor: pointer; text-transform: uppercase; font-size: 11px; font-weight: bold; }
         .score { font-size: 22px; font-weight: bold; text-align: center; color: #fff; text-shadow: 0 0 10px var(--accent); }
@@ -76,10 +80,13 @@
     <div class="scanline"></div>
 
     <div id="bootScreen">
-        <div class="hof-display" id="globalHOF">HALL OF FAME: LOADING...</div>
+        <div class="hof-container">
+            <div class="hof-title">TOP 5 OPERATORS</div>
+            <span class="clear-hof" onclick="clearHOF()">[CLEAR DATA]</span>
+            <div id="hofList"></div>
+        </div>
         <div class="logo-container"><div class="ring"></div><div class="core"></div></div>
         <h1 style="color:var(--accent); font-size: 18px; margin-bottom: 20px;">&gt; AEgIS_MAGNETS_CHAOS_OF_THE_AD_HALL</h1>
-        <input type="text" id="operatorInput" style="background:#000; border:1px solid #00ff41; color:#00ff41; padding:10px; width:300px; text-align:center; margin-bottom:15px; outline:none;" placeholder="OPERATOR ID">
         
         <select id="difficultySelect" style="background:#000; border:1px solid #00ff41; color:#00ff41; padding:10px; width:300px; margin-bottom:15px; outline:none;">
             <option value="easy">LEVEL: NOVICE (120s | STABLE CRYOS)</option>
@@ -91,7 +98,27 @@
             <option value="aegis">MODE: STANDARD_STABILIZATION</option>
             <option value="random">MODE: GHOST_FIELD_CHALLENGE</option>
         </select>
-        <button class="ready-btn" onclick="masterUnlock()">ENGAGE MAGNETS</button>
+        <button class="ready-btn" onclick="goToRegistration()">PROCEED</button>
+    </div>
+
+    <div id="registrationScreen">
+        <div class="logo-container" style="transform: scale(0.6); margin-bottom: 0;"><div class="ring" style="animation-duration: 0.5s;"></div><div class="core"></div></div>
+        <h2 style="color:var(--gold); font-size: 16px; margin-bottom: 25px;">OPERATOR REGISTRATION</h2>
+        
+        <div class="form-group">
+            <label>FULL NAME OR ALIAS</label>
+            <input type="text" id="regName" class="form-input" placeholder="Enter Operator ID">
+        </div>
+        <div class="form-group">
+            <label>AGE</label>
+            <input type="number" id="regAge" class="form-input" placeholder="Years">
+        </div>
+        <div class="form-group">
+            <label>RESEARCH INTEREST </label>
+            <textarea id="regInfo" class="form-input" rows="3" placeholder="When you grow up, what is your dream job?"></textarea>
+        </div>
+        
+        <button class="ready-btn" onclick="masterUnlock()">AUTHORIZE & ENGAGE</button>
     </div>
 
     <div id="briefingScreen">
@@ -105,8 +132,9 @@
             <div id="perfStats"></div>
             <div id="historyPlot"></div>
         </div>
-        <div style="display: flex; gap: 20px;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center;">
             <button class="ready-btn" onclick="location.reload()">RE-CALIBRATE</button>
+            <button class="ready-btn" onclick="downloadImpactData()" style="border-color: var(--target); color: var(--target);">EXPORT IMPACT DATA (.TXT)</button>
             <button class="ready-btn" onclick="showCredits()" style="border-color: var(--gold); color: var(--gold);">EXIT TERMINAL</button>
         </div>
     </div>
@@ -114,37 +142,30 @@
     <div id="creditScreen">
         <div id="creditWrapper">
             <h1 class="credit-header">AEgIS MISSION COMPLETE</h1>
-            
             <div class="credit-section">
                 <p class="credit-role">Lead Scientist</p>
                 <p class="credit-name" id="creditOperator">OPERATOR</p>
             </div>
-
             <div class="credit-section">
-                <p class="credit-role">Orignal Concept and Developed by</p>
-                <p class="credit-name">Dr.Bharat Singh Rawat</p>
+                <p class="credit-role">Original Concept and Developed by</p>
+                <p class="credit-name">Dr. Bharat Singh Rawat</p>
             </div>
-
             <div class="credit-section">
                 <p class="credit-role">Contact Details</p>
                 <p class="credit-name">bharat.bharat22@gmail.com</p>
             </div>
-
             <div class="credit-section">
                 <p class="credit-role">Music & Sound</p>
                 <p class="credit-name">8-Bit Audio Sequencer V2.0</p>
             </div>
-
             <div class="credit-section">
                 <p class="credit-role">Data Visualization</p>
                 <p class="credit-name">Plotly Terminal Bridge</p>
             </div>
-
             <div class="credit-section" style="margin-top: 100px;">
                 <p class="credit-name">THANK YOU FOR PRESERVING STABILITY</p>
                 <p class="credit-role">CERN - European Organization for Nuclear Research</p>
             </div>
-            
             <button class="ready-btn" onclick="location.reload()" style="margin-top: 50px;">RESTART SYSTEM</button>
         </div>
     </div>
@@ -180,20 +201,18 @@ let currentTarget = [], targetGrad = [], isRandom = false;
 let stabilityHistory = []; 
 let difficulty = "medium";
 
-// --- NEW FUNCTION: SHOW CREDITS ---
 function showCredits() {
     document.getElementById('performanceScreen').style.display = 'none';
     document.getElementById('creditScreen').style.display = 'flex';
     document.getElementById('creditOperator').innerText = operatorName.toUpperCase();
 }
 
-// --- AUDIO ENGINE ---
+// --- AUDIO ---
 const FREQ = { C3: 130.81, D3: 146.83, Eb3: 155.56, F3: 174.61, G3: 196.00, Ab3: 207.65, Bb3: 233.08, C4: 261.63, D4: 293.66, Eb4: 311.13, F4: 349.23, G4: 392.00, Ab4: 415.30 };
 const phrases = [
     ["C4","G3","C4","Eb4","D4","C4","Bb3","G3","C4","C4","G4","F4","Eb4","D4","C4",null],
     ["Eb4","Eb4","F4","G4","Ab4","G4","F4","Eb4","D4","D4","Eb4","F4","G4","F4","Eb4","D4"],
-    ["C3","G3","C4","G3","C3","G3","C4","G3","Ab2","Eb3","Ab3","Eb3","Bb2","F3","Bb3","F3"],
-    ["C4","Bb3","Ab3","G3","F3","Eb3","D3","C3","C2","G2","C3","G3","C4",null,null,null]
+    ["C3","G3","C4","G3","C3","G3","C4","G3","Ab2","Eb3","Ab3","Eb3","Bb2","F3","Bb3","F3"]
 ];
 let tickIndex = 0;
 let musicTimeout = null;
@@ -203,13 +222,10 @@ function playTone(freq, time, type='square', vol=0.06, decay=0.15) {
     const osc = audioCtx.createOscillator();
     const g = audioCtx.createGain();
     osc.type = type;
-    
-    let vibrato = (curMatch < 30 && isSystemActive) ? (Math.sin(audioCtx.currentTime * 20) * 10) : 0;
+    let vibrato = (curMatch < 50 && isSystemActive) ? (Math.sin(audioCtx.currentTime * 20) * 15) : 0;
     osc.frequency.setValueAtTime(freq + vibrato, time);
-    
     g.gain.setValueAtTime(vol, time);
     g.gain.exponentialRampToValueAtTime(0.0001, time + decay);
-    
     osc.connect(g);
     g.connect(musicGain);
     osc.start(time);
@@ -218,60 +234,115 @@ function playTone(freq, time, type='square', vol=0.06, decay=0.15) {
 
 function runSequencer() {
     if (!isSystemActive) return;
-    
     let time = audioCtx.currentTime;
     let currentPhrase = phrases[Math.floor(tickIndex / 16) % phrases.length];
     let note = currentPhrase[tickIndex % 16];
-    
     if (note) playTone(FREQ[note], time, 'square', 0.04, 0.15);
     if (tickIndex % 4 === 0) playTone(FREQ[note] ? FREQ[note]/4 : 65.41, time, 'triangle', 0.1, 0.4);
-
     tickIndex++;
-
     let baseTempo = 180;
-    let currentTempo = baseTempo;
-    
-    if (timeLeft <= 20) {
-        let speedFactor = 1 + ((20 - timeLeft) / 20); 
-        currentTempo = baseTempo / speedFactor;
-    }
-
+    let currentTempo = (timeLeft <= 10 && curMatch < 50) ? 80 : (timeLeft <= 20 ? 120 : baseTempo);
     musicTimeout = setTimeout(runSequencer, currentTempo);
 }
 
+// --- HIGH SCORES ---
 function initHOF() {
-    const topOp = localStorage.getItem('aegis_top_op') || "NONE";
-    const topScore = localStorage.getItem('aegis_top_score') || "0.0";
-    document.getElementById('globalHOF').innerText = `🏆 HALL OF FAME: ${topOp} - ${topScore}%`;
+    const scores = JSON.parse(localStorage.getItem('aegis_top_scores') || "[]");
+    const list = document.getElementById('hofList');
+    list.innerHTML = scores.length === 0 ? "<div class='hof-row'>SYSTEM CLEAR - NO DATA</div>" : "";
+    scores.forEach((entry, i) => {
+        let div = document.createElement('div');
+        div.className = `hof-row ${i === 0 ? 'top' : ''}`;
+        div.innerHTML = `<span>#${i+1} ${entry.name}</span><span>${entry.score}%</span>`;
+        list.appendChild(div);
+    });
 }
+function clearHOF() { if(confirm("ERASE ALL HIGH SCORE RECORDS?")) { localStorage.removeItem('aegis_top_scores'); initHOF(); } }
 initHOF();
 
+function saveScore(name, score) {
+    let scores = JSON.parse(localStorage.getItem('aegis_top_scores') || "[]");
+    scores.push({ name: name.toUpperCase(), score: parseFloat(score) });
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem('aegis_top_scores', JSON.stringify(scores.slice(0, 5)));
+}
+
+// --- NEW IMPACT DATA & REGISTRATION LOGIC ---
+function goToRegistration() {
+    document.getElementById('bootScreen').style.display = 'none';
+    document.getElementById('registrationScreen').style.display = 'flex';
+}
+
 function masterUnlock() {
-    operatorName = document.getElementById('operatorInput').value || "OPERATOR";
+    const regName = document.getElementById('regName').value.trim();
+    const regAge = document.getElementById('regAge').value.trim();
+    const regInfo = document.getElementById('regInfo').value.trim();
+
+    if (!regName || !regAge) { alert("ERROR: NAME AND AGE IDENTIFICATION REQUIRED FOR RESEARCH."); return; }
+    
+    operatorName = regName;
+    
+    // Save Registration info upfront (we will update it with the score at the end)
+    let impactData = JSON.parse(localStorage.getItem('aegis_impact_data') || "[]");
+    impactData.push({
+        name: operatorName,
+        age: regAge,
+        info: regInfo || "N/A",
+        date: new Date().toLocaleString(),
+        score: "In Progress"
+    });
+    localStorage.setItem('aegis_impact_data', JSON.stringify(impactData));
+
     isRandom = document.getElementById('bootMissionSelect').value === 'random';
     difficulty = document.getElementById('difficultySelect').value;
+    document.getElementById('activeUser').innerText = "OP: " + operatorName.toUpperCase();
     
-    document.getElementById('activeUser').innerText = "OP: " + operatorName;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    document.getElementById('bootScreen').style.display = 'none';
+    document.getElementById('registrationScreen').style.display = 'none';
     document.getElementById('briefingScreen').style.display = 'flex';
-    const log = document.getElementById('logContainer');
     
+    const log = document.getElementById('logContainer');
     const msgs = [
-        "&gt; Checking Magnetic Confinement Field...",
-        `&gt; DIFFICULTY LEVEL: ${difficulty.toUpperCase()} ENABLED.`,
-        "&gt; Warning: Low stability causes structural vibration.",
-        "&gt; Interface online. Stand by for antiproton injection."
+        "&gt; Initializing Cryogenic Systems...", 
+        `&gt; OPERATOR ${operatorName.toUpperCase()} AUTHORIZED.`, 
+        "&gt; Impact tracking active. Data recording initiated.",
+        `&gt; SECURITY LEVEL: ${difficulty.toUpperCase()}.`, 
+        "&gt; WARNING: HIGH GRADIENTS MAY CAUSE HARDWARE SHAKE.", 
+        "&gt; The humanity counts on you!",
+        "&gt; Ready for plasma injection."
     ];
-
     msgs.forEach((m, i) => { 
         setTimeout(() => { 
-            let d = document.createElement('div'); 
-            d.innerHTML = m; 
-            log.appendChild(d); 
+            let d = document.createElement('div'); d.innerHTML = m; log.appendChild(d); 
             if(i === msgs.length - 1) document.getElementById('accessBtn').style.display = 'block'; 
         }, i * 600); 
     });
+}
+
+function downloadImpactData() {
+    const data = JSON.parse(localStorage.getItem('aegis_impact_data') || "[]");
+    let txt = "CERN AEgIS IMPACT STUDY - OPERATOR LOGS\n";
+    txt += "========================================\n\n";
+    
+    data.forEach((op, i) => {
+        txt += `LOG #${i+1}\n`;
+        txt += `Operator Name: ${op.name}\n`;
+        txt += `Age: ${op.age}\n`;
+        txt += `Research/Interest Info: ${op.info}\n`;
+        txt += `Timestamp: ${op.date}\n`;
+        txt += `Final Stability Score: ${op.score}%\n`;
+        txt += `----------------------------------------\n`;
+    });
+    
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "AEgIS_Operator_Impact_Data.txt";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }
 
 function enterLab() {
@@ -281,18 +352,14 @@ function enterLab() {
         magnetData = data; 
         const zk = magnetData.z_axial ? 'z_axial' : 'z';
         if(isRandom) generateGhostField(); else currentTarget = [...data.target];
-        
         targetGrad = new Array(currentTarget.length).fill(0);
-        for(let i=1; i < currentTarget.length; i++) {
-            targetGrad[i] = (currentTarget[i] - currentTarget[i-1]) / (magnetData[zk][i] - magnetData[zk][i-1]);
-        }
+        for(let i=1; i < currentTarget.length; i++) { targetGrad[i] = (currentTarget[i] - currentTarget[i-1]) / (magnetData[zk][i] - magnetData[zk][i-1]); }
         initUI(); initParticles(); update(); animate();
     });
 }
 
 function initUI() {
-    const list = document.getElementById('coil-list');
-    list.innerHTML = ""; // Clear list
+    const list = document.getElementById('coil-list'); list.innerHTML = "";
     Object.keys(magnetData.coils1D).sort((a,b) => (parseInt(a.match(/\d+/))||0) - (parseInt(b.match(/\d+/))||0)).forEach(name => {
         currents[name] = 0;
         let div = document.createElement('div'); div.className = 'coil-item';
@@ -302,19 +369,10 @@ function initUI() {
     });
 }
 
-// PERFORMANCE OPTIMIZATION: Throttling plot updates
-let plotUpdateTimeout = null;
 function setPower(name, val) { 
     if(!isSystemActive) return;
-    currents[name] = parseFloat(val); 
-    document.getElementById(`label_${name}`).innerText = val + "A"; 
-    
-    if (!plotUpdateTimeout) {
-        plotUpdateTimeout = setTimeout(() => {
-            update();
-            plotUpdateTimeout = null;
-        }, 100);
-    }
+    currents[name] = parseFloat(val); document.getElementById(`label_${name}`).innerText = val + "A"; 
+    update();
 }
 
 function update() {
@@ -322,17 +380,12 @@ function update() {
     const zk = magnetData.z_axial ? 'z_axial' : 'z';
     let bz1D = new Array(magnetData[zk].length).fill(0), gradLive = new Array(magnetData[zk].length).fill(0);
     let bmag2D = Array.from({length: magnetData.y_grid.length}, () => new Array(magnetData.z_grid.length).fill(0));
-    
     for (let name in currents) {
         let I = currents[name]; if (I <= 0) continue;
         magnetData.coils1D[name].forEach((v, i) => bz1D[i] += v * I);
         magnetData.coils2D[name].forEach((row, r) => row.forEach((v, c) => bmag2D[r][c] += v * I));
     }
-    
-    for(let i=1; i < bz1D.length; i++) { 
-        gradLive[i] = (bz1D[i] - bz1D[i-1]) / (magnetData[zk][i] - magnetData[zk][i-1]); 
-    }
-
+    for(let i=1; i < bz1D.length; i++) { gradLive[i] = (bz1D[i] - bz1D[i-1]) / (magnetData[zk][i] - magnetData[zk][i-1]); }
     if (Object.values(currents).every(v => v === 0)) curMatch = 0;
     else {
         const sensMult = difficulty === 'hard' ? 0.25 : (difficulty === 'easy' ? 0.5 : 0.35);
@@ -344,12 +397,12 @@ function update() {
         let matchGrad = 100 * (1 - (Math.sqrt(sumSqErrGrad / targetGrad.length) / (peakGrad * (sensMult + 0.1))));
         curMatch = Math.max(0, (matchField * 0.6) + (matchGrad * 0.4));
     }
-
     document.getElementById('scoreLabel').innerText = `STABILITY: ${curMatch.toFixed(1)}%`;
     const common = { paper_bgcolor:'#000', plot_bgcolor:'#000', font:{color:'#00ff41', size:9}, margin:{t:30,b:40,l:50,r:30} };
     
-    Plotly.react('plot1D', [{ x: magnetData[zk], y: currentTarget, line:{dash:'dot', color:'#333', width:2}}, { x: magnetData[zk], y: bz1D, line:{color:curMatch>95?'#00ff41':'#ff3131'}}], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'B (T)', gridcolor:'#111'} });
-    Plotly.react('plotGrad', [{ x: magnetData[zk], y: targetGrad, line:{dash:'dot', color:'#222', width:1}}, { x: magnetData[zk], y: gradLive, line:{color:curMatch>95?'#00ff41':'#ff9900'}, fill:'tozeroy'}], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'dB/dz', gridcolor:'#111'} });
+    // Target fields are now visible Cyan (#00ffff)
+    Plotly.react('plot1D', [{ x: magnetData[zk], y: currentTarget, line:{dash:'dash', color:'#00ffff', width:2}, name:'Target'}, { x: magnetData[zk], y: bz1D, line:{color:curMatch>95?'#00ff41':'#ff3131'}, name:'Live'}], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'B (T)', gridcolor:'#111'} });
+    Plotly.react('plotGrad', [{ x: magnetData[zk], y: targetGrad, line:{dash:'dash', color:'#00ffff', width:2}, name:'Target Grad'}, { x: magnetData[zk], y: gradLive, line:{color:curMatch>95?'#00ff41':'#ff9900'}, fill:'tozeroy', name:'Live Grad'}], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'dB/dz', gridcolor:'#111'} });
     Plotly.react('plot2D', [{ z: bmag2D, x: magnetData.z_grid, y: magnetData.y_grid, type: 'heatmap', colorscale: curMatch > 90 ? 'Viridis' : 'Hot', showscale: true }], { ...common, xaxis:{title:'Z (mm)', gridcolor:'#111'}, yaxis:{title:'Radial R (mm)', gridcolor:'#111'} });
 }
 
@@ -357,17 +410,15 @@ function beginMission() {
     isSystemActive = true; 
     document.getElementById('startBtn').disabled = true;
     document.querySelectorAll('.magnet-slider').forEach(s => s.disabled = false);
-    stabilityHistory = [];
-    musicGain = audioCtx.createGain();
-    musicGain.gain.setValueAtTime(0.4, audioCtx.currentTime);
-    musicGain.connect(audioCtx.destination);
+    musicGain = audioCtx.createGain(); musicGain.gain.setValueAtTime(0.4, audioCtx.currentTime); musicGain.connect(audioCtx.destination);
     timeLeft = difficulty === 'easy' ? 120 : (difficulty === 'hard' ? 45 : 80);
     runSequencer();
     timerId = setInterval(() => {
         timeLeft--; 
         document.getElementById('timerLabel').innerText = timeLeft + "s";
         stabilityHistory.push(curMatch); 
-        if (timeLeft <= 10 && curMatch < 30) {
+        // --- SCREEN SHAKE & EMERGENCY CHECK ---
+        if (timeLeft <= 10 && curMatch < 50) {
             document.getElementById('mainBody').classList.add('shake-active', 'critical-alert');
         } else {
             document.getElementById('mainBody').classList.remove('shake-active', 'critical-alert');
@@ -377,37 +428,32 @@ function beginMission() {
 }
 
 function endGame() {
-    clearInterval(timerId); 
-    clearTimeout(musicTimeout);
-    isSystemActive = false; 
-    document.getElementById('mainBody').classList.remove('shake-active', 'critical-alert');
+    clearInterval(timerId); clearTimeout(musicTimeout);
+    isSystemActive = false; document.getElementById('mainBody').classList.remove('shake-active', 'critical-alert');
     document.querySelectorAll('.magnet-slider').forEach(s => s.disabled = true);
     if (musicGain) musicGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
-    const currentTop = parseFloat(localStorage.getItem('aegis_top_score') || 0);
-    if (curMatch > currentTop) {
-        localStorage.setItem('aegis_top_score', curMatch.toFixed(1));
-        localStorage.setItem('aegis_top_op', operatorName.toUpperCase());
-        initHOF();
+    
+    saveScore(operatorName, curMatch.toFixed(1)); 
+    initHOF();
+    
+    // Update the final score into the impact data
+    let impactData = JSON.parse(localStorage.getItem('aegis_impact_data') || "[]");
+    if (impactData.length > 0) {
+        impactData[impactData.length - 1].score = curMatch.toFixed(1);
+        localStorage.setItem('aegis_impact_data', JSON.stringify(impactData));
     }
+
     document.getElementById('gameInterface').style.display = 'none';
     document.getElementById('performanceScreen').style.display = 'flex';
-    document.getElementById('perfStats').innerHTML = `
-        &gt; LOG_ENTRY: SHIFT_TERMINATED<br>
-        &gt; OPERATOR_ID: ${operatorName.toUpperCase()}<br>
-        &gt; FINAL_STABILITY: ${curMatch.toFixed(2)}%<br>
-        -----------------------------------------<br>
-        ${getSnarkyComment(curMatch)}<br>
-    `;
-    const timeAxis = Array.from({length: stabilityHistory.length}, (_, i) => i);
-    Plotly.newPlot('historyPlot', [{ x: timeAxis, y: stabilityHistory, type: 'scatter', mode: 'lines', fill: 'tozeroy', line: {color: '#00ff41'} }], { title: {text: 'SHIFT STABILITY HISTORY', font: {color: '#00ff41', size: 12}}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#00ff41', size: 10}, margin: {t: 30, b: 30, l: 40, r: 20}, xaxis: {title: 'Time (s)', gridcolor: '#222', showgrid: true}, yaxis: {title: 'Stability %', gridcolor: '#222', showgrid: true, range: [0, 100]} });
+    document.getElementById('perfStats').innerHTML = `&gt; LOG_ENTRY: SHIFT_TERMINATED<br>&gt; OPERATOR_ID: ${operatorName.toUpperCase()}<br>&gt; FINAL_STABILITY: ${curMatch.toFixed(2)}%<br>-----------------------------------------<br>${getSnarkyComment(curMatch)}<br>`;
+    Plotly.newPlot('historyPlot', [{ x: Array.from({length: stabilityHistory.length}, (_, i) => i), y: stabilityHistory, type: 'scatter', mode: 'lines', fill: 'tozeroy', line: {color: '#00ff41'} }], { title: {text: 'SHIFT STABILITY HISTORY', font: {color: '#00ff41', size: 12}}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: {color: '#00ff41', size: 10}, margin: {t: 30, b: 30, l: 40, r: 20}, xaxis: {title: 'Time (s)', gridcolor: '#222', showgrid: true}, yaxis: {title: 'Stability %', gridcolor: '#222', showgrid: true, range: [0, 100]} });
 }
 
 function getSnarkyComment(score) {
     if (score >= 98) return "&gt; STATUS: SUSPICIOUSLY PERFECT. Are you a time traveler?";
-    if (score >= 85) return "&gt; STATUS: STABLE. The physicists are happy, which is rare.";
-    if (score >= 60) return "&gt; STATUS: MEH. It's stable enough for a government project.";
-    if (score >= 30) return "&gt; STATUS: MESSY. We have lost three interns to the gradient.";
-    return "&gt; STATUS: APOCALYPTIC. You've turned the AD Hall into a heater.";
+    if (score >= 85) return "&gt; STATUS: STABLE. Physicists are pleased.";
+    if (score >= 30) return "&gt; STATUS: MESSY. Structural integrity compromised.";
+    return "&gt; STATUS: APOCALYPTIC. The magnets have basically become a furnace.";
 }
 
 function generateGhostField() {
@@ -418,19 +464,29 @@ function generateGhostField() {
 
 function initParticles() { 
     const pc = document.getElementById('particleCanvas'); pc.width = pc.offsetWidth; pc.height = pc.offsetHeight; 
-    particles = Array.from({length: 80}, () => ({ x: Math.random() * pc.width, y: pc.height/2, vx: (Math.random()-0.5)*3 })); 
+    particles = Array.from({length: 100}, () => ({ x: Math.random() * pc.width, y: pc.height/2, vx: (Math.random()-0.5)*3, size: Math.random() * 2 + 1 })); 
 }
 
 function animate() {
     const pc = document.getElementById('particleCanvas'); if(!pc) return;
     const pCtx = pc.getContext('2d'); pCtx.clearRect(0,0,pc.width,pc.height);
     const radialCenter = pc.height / 2;
+    const isEmergency = (timeLeft <= 10 && curMatch < 50 && isSystemActive);
+
     particles.forEach(p => {
-        p.x += p.vx;
-        p.y += (Math.random()-0.5) * (8 - (curMatch/15)) + (radialCenter - p.y) * 0.05;
-        if(p.x > pc.width) p.x = 0; if(p.x < 0) p.x = pc.width;
-        pCtx.fillStyle = curMatch >= 95 ? "#00ff41" : (curMatch > 70 ? "#ff9900" : "#ff3131");
-        pCtx.beginPath(); pCtx.arc(p.x, p.y, 1.5, 0, Math.PI*2); pCtx.fill();
+        if (isEmergency) {
+            // --- FIRE BURST EFFECT ---
+            p.x += (Math.random() - 0.5) * 15;
+            p.y += (Math.random() - 0.5) * 15;
+            pCtx.fillStyle = `rgba(255, ${Math.random()*100}, 0, 0.8)`;
+            pCtx.beginPath(); pCtx.arc(p.x, p.y, p.size * 3, 0, Math.PI*2); pCtx.fill();
+        } else {
+            p.x += p.vx;
+            p.y += (Math.random()-0.5) * (8 - (curMatch/15)) + (radialCenter - p.y) * 0.05;
+            if(p.x > pc.width) p.x = 0; if(p.x < 0) p.x = pc.width;
+            pCtx.fillStyle = curMatch >= 95 ? "#00ff41" : (curMatch > 70 ? "#ff9900" : "#ff3131");
+            pCtx.beginPath(); pCtx.arc(p.x, p.y, p.size, 0, Math.PI*2); pCtx.fill();
+        }
     });
     requestAnimationFrame(animate);
 }
